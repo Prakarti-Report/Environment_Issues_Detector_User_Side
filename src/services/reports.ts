@@ -61,7 +61,7 @@ export const createReport = async (
     const fullName = userData.user.user_metadata?.full_name || 'Citizen Reporter';
     await supabase.from('profiles').upsert(
       { id: userData.user.id, full_name: fullName },
-      { onConflict: 'id' }
+      { onConflict: 'id', ignoreDuplicates: true }
     );
   }
 

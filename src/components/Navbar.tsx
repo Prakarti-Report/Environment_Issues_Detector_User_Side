@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 import { Leaf, User, LogOut, LogIn } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { signIn, signOut } from '../services/auth';
+import { signOut } from '../services/auth';
+import AuthForm from './AuthForm';
 
 const Navbar = () => {
   const [session, setSession] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (!supabase) return;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -25,19 +25,16 @@ const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage('');
-    try {
-      await signIn(email);
-      setMessage('Check your email for the login link!');
-    } catch (error: any) {
-      setMessage(error.message || 'An error occurred.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAuthModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAuthModal]);
 
   const handleLogout = async () => {
     try {
@@ -84,56 +81,38 @@ const Navbar = () => {
       </nav>
 
       {showAuthModal && !session && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            backgroundColor: 'var(--card-bg, white)', padding: '2rem', borderRadius: '8px', 
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h2 style={{ marginTop: 0, marginBottom: '1rem' }}>Sign In / Sign Up</h2>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-light)' }}>
-              Enter your email to receive a magic link to sign in or create an account.
-            </p>
-            <form onSubmit={handleAuth}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  style={{ 
-                    width: '100%', padding: '0.75rem', borderRadius: '4px', 
-                    border: '1px solid #ccc', boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowAuthModal(false)} 
-                  className="btn btn-outline"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Sending...' : 'Send Magic Link'}
-                </button>
-              </div>
-              {message && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--accent-light)', color: 'var(--accent-color)', borderRadius: '4px', fontSize: '0.875rem' }}>
-                  {message}
-                </div>
-              )}
-            </form>
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAuthModal(false);
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--card-bg, white)',
+              padding: '2rem',
+              borderRadius: '1rem',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            }}
+          >
+            <AuthForm
+              onSuccess={() => setShowAuthModal(false)}
+              onCancel={() => setShowAuthModal(false)}
+            />
           </div>
         </div>
       )}
