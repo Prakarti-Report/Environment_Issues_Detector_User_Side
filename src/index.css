@@ -293,3 +293,9 @@ body {
   animation-play-state: paused;
 }
 
+@media (width<=512px){
+    .container{
+        max-width:100vw;
+    }
+}
+

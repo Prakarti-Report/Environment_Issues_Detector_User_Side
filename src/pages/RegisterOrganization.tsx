@@ -8,6 +8,7 @@ import {
   friendlyOrgRegisterError,
 } from '../services/organizations';
 import { Building2, ArrowLeft, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ORG_DASHBOARD_URL } from '../config/links';
 
 const RegisterOrganization: React.FC = () => {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -273,9 +274,13 @@ const RegisterOrganization: React.FC = () => {
             )}
 
             <div style={{ marginTop: '1.5rem' }}>
-              <Link to="/" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
-                Go to Home
-              </Link>
+              <a
+                href={ORG_DASHBOARD_URL}
+                className="btn btn-primary"
+                style={{ textDecoration: 'none', display: 'inline-block' }}
+              >
+                Go to Dashboard
+              </a>
             </div>
           </div>
         ) : (
