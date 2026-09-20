@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getReports, getImageUrl, updateReport } from '../services/reports';
 import type { Report } from '../services/reports';
@@ -29,11 +29,17 @@ const MyReports = () => {
   const [session, setSession] = useState<any>(null);
   const [reports, setReports] = useState<ReportWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
   const [analyzingIds, setAnalyzingIds] = useState<Record<string, boolean>>({});
   const [analyzeErrors, setAnalyzeErrors] = useState<Record<string, string>>({});
+  
   const autoAnalyzedRef = useRef<Record<string, boolean>>({});
+  const imageDebounceTimer = useRef<any>(null);
+  const pollingTimer = useRef<any>(null);
 
   useEffect(() => {
+    if (!supabase) return;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -47,7 +53,7 @@ const MyReports = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAnalyzeReport = async (report: ReportWithImages) => {
+  const handleAnalyzeReport = useCallback(async (report: ReportWithImages) => {
     const imagePath = report.report_images?.[0]?.storage_path;
     if (!imagePath) return;
 
@@ -73,13 +79,12 @@ const MyReports = () => {
         await updateReport(report.id, updates);
       } catch (dbErr) {
         console.warn('Could not persist all AI fields to database (RLS trigger), updating local view:', dbErr);
-        // Fallback update just category and description
         try {
           await updateReport(report.id, {
             category: aiResult.category,
             description: aiResult.description,
           });
-        } catch (_) {}
+        } catch {}
       }
 
       // Update state locally so user immediately sees complete report
@@ -95,31 +100,146 @@ const MyReports = () => {
     } finally {
       setAnalyzingIds(prev => ({ ...prev, [report.id]: false }));
     }
-  };
+  }, []);
+
+  const fetchUserReports = useCallback(async (userId: string) => {
+    try {
+      const data = await getReports();
+      if (data) {
+        const userReports = (data as unknown as ReportWithImages[]).filter(
+          r => r.user_id === userId
+        );
+        setReports(userReports);
+
+        // Auto-trigger analysis for pending reports with an image
+        userReports.forEach(r => {
+          const isPending = r.category === 'pending_ai' || !r.ai_category;
+          const hasImage = r.report_images?.[0]?.storage_path;
+          if (isPending && hasImage && !autoAnalyzedRef.current[r.id]) {
+            autoAnalyzedRef.current[r.id] = true;
+            handleAnalyzeReport(r);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('[MyReports] Error fetching reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [handleAnalyzeReport]);
 
   useEffect(() => {
-    if (session) {
-      getReports().then(data => {
-        if (data) {
-          const userReports = (data as unknown as ReportWithImages[]).filter(
-            r => r.user_id === session.user.id
-          );
-          setReports(userReports);
+    if (!session?.user?.id || !supabase) return;
 
-          // Auto-trigger analysis for pending reports with an image
-          userReports.forEach(r => {
-            const isPending = r.category === 'pending_ai' || !r.ai_category;
-            const hasImage = r.report_images?.[0]?.storage_path;
-            if (isPending && hasImage && !autoAnalyzedRef.current[r.id]) {
-              autoAnalyzedRef.current[r.id] = true;
-              handleAnalyzeReport(r);
+    const userId = session.user.id;
+
+    // Initial fetch
+    fetchUserReports(userId);
+
+    const startPolling = () => {
+      if (!pollingTimer.current) {
+        pollingTimer.current = setInterval(() => {
+          fetchUserReports(userId);
+        }, 30000);
+      }
+    };
+
+    const stopPolling = () => {
+      if (pollingTimer.current) {
+        clearInterval(pollingTimer.current);
+        pollingTimer.current = null;
+      }
+    };
+
+    // Supabase Realtime channel setup
+    const channel = supabase
+      .channel(`my-reports-channel-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reports',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const newReport = payload.new as ReportWithImages;
+          setReports(prev => {
+            const exists = prev.find(r => r.id === newReport.id);
+            if (exists) {
+              return prev.map(r =>
+                r.id === newReport.id ? { ...newReport, report_images: exists.report_images } : r
+              );
             }
+            return [{ ...newReport, report_images: [] }, ...prev];
           });
         }
-        setLoading(false);
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'reports',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as ReportWithImages;
+          setReports(prev =>
+            prev.map(r =>
+              r.id === updated.id ? { ...updated, report_images: r.report_images } : r
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'report_images',
+        },
+        () => {
+          if (imageDebounceTimer.current) {
+            clearTimeout(imageDebounceTimer.current);
+          }
+          imageDebounceTimer.current = setTimeout(() => {
+            fetchUserReports(userId);
+          }, 500);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsLive(true);
+          stopPolling();
+        } else if (
+          status === 'CHANNEL_ERROR' ||
+          status === 'TIMED_OUT' ||
+          status === 'CLOSED'
+        ) {
+          setIsLive(false);
+          startPolling();
+        }
       });
-    }
-  }, [session]);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUserReports(userId);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      supabase.removeChannel(channel);
+      stopPolling();
+      if (imageDebounceTimer.current) {
+        clearTimeout(imageDebounceTimer.current);
+        imageDebounceTimer.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [session?.user?.id, fetchUserReports]);
 
   if (!session) {
     return (
@@ -131,7 +251,35 @@ const MyReports = () => {
 
   return (
     <div className="container" style={{ padding: '4rem 1rem', maxWidth: '900px' }}>
-      <h1 style={{ marginBottom: '0.5rem', color: 'var(--primary-color)' }}>My Reports</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <h1 style={{ margin: 0, color: 'var(--primary-color)' }}>My Reports</h1>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '4px 10px',
+            borderRadius: '9999px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            backgroundColor: isLive ? '#dcfce7' : '#fef3c7',
+            color: isLive ? '#166534' : '#92400e',
+            border: `1px solid ${isLive ? '#86efac' : '#fde68a'}`,
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isLive ? '#16a34a' : '#d97706',
+              boxShadow: isLive ? '0 0 6px #16a34a' : 'none',
+            }}
+          />
+          {isLive ? '● Live' : '● Live (30 s)'}
+        </div>
+      </div>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
         {reports.length} report{reports.length !== 1 ? 's' : ''} submitted
       </p>
@@ -402,4 +550,3 @@ const MyReports = () => {
 };
 
 export default MyReports;
-

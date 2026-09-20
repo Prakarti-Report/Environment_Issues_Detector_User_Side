@@ -1,6 +1,20 @@
 import type { ReportStatus } from './reports';
+import {
+  AI_API_URL,
+  AI_BASE_URL,
+  AI_PROD_URL,
+  isLocalHost,
+  AI_FALLBACK_TO_PROD,
+} from '../config/env';
 
-export const AI_API_URL = 'https://pollution-detection.onrender.com/detect-pollution';
+export { AI_API_URL, AI_BASE_URL };
+
+if (import.meta.env.DEV) {
+  console.info('[AI] using', AI_API_URL);
+}
+
+export const warmUpAi = () =>
+  fetch(AI_BASE_URL, { method: 'GET', mode: 'no-cors' }).catch(() => {});
 
 export interface NormalizedAiReport {
   category: string;
@@ -119,33 +133,78 @@ export const normalizeAiResponse = (data: any): NormalizedAiReport => {
   };
 };
 
-/**
- * Sends an image file/blob to the Pollution Detection AI endpoint with a timeout.
- */
-export const detectPollution = async (file: File | Blob): Promise<NormalizedAiReport> => {
+const createFormData = (file: File | Blob) => {
   const formData = new FormData();
   formData.append('file', file, file instanceof File ? file.name : 'report_image.jpg');
+  return formData;
+};
 
+const postWithTimeout = async (url: string, file: File | Blob, timeoutMs: number) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s for Render wake-up
-
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(AI_API_URL, {
+    const response = await fetch(url, {
       method: 'POST',
-      body: formData,
+      body: createFormData(file),
       signal: controller.signal,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(`AI API returned status ${response.status}: ${errorText || response.statusText}`);
-    }
-
-    const data = await response.json();
-    return normalizeAiResponse(data);
+    return response;
   } finally {
-    clearTimeout(timeoutId);
+    clearTimeout(timer);
   }
+};
+
+const isRetryableStatus = (status: number) => status === 502 || status === 503 || status === 504;
+
+const executeRequest = async (url: string, file: File | Blob, timeoutMs: number) => {
+  try {
+    const res = await postWithTimeout(url, file, timeoutMs);
+    return { ok: true as const, response: res, networkError: null };
+  } catch (err: any) {
+    return { ok: false as const, response: null, networkError: err };
+  }
+};
+
+/**
+ * Sends an image file/blob to the Pollution Detection AI endpoint with timeouts,
+ * retries, and fallback handling.
+ */
+export const detectPollution = async (file: File | Blob): Promise<NormalizedAiReport> => {
+  const primaryUrl = AI_API_URL;
+  const primaryTimeout = isLocalHost ? 20000 : 90000;
+
+  let result = await executeRequest(primaryUrl, file, primaryTimeout);
+
+  if (result.networkError) {
+    if (isLocalHost && AI_FALLBACK_TO_PROD) {
+      console.warn('[AI] Local AI server network error; falling back to Render AI URL...');
+      result = await executeRequest(AI_PROD_URL, file, 90000);
+      if (result.networkError || (result.response && isRetryableStatus(result.response.status))) {
+        result = await executeRequest(AI_PROD_URL, file, 90000);
+      }
+    } else {
+      result = await executeRequest(primaryUrl, file, primaryTimeout);
+    }
+  } else if (result.response && isRetryableStatus(result.response.status)) {
+    result = await executeRequest(primaryUrl, file, primaryTimeout);
+  }
+
+  if (result.networkError) {
+    throw new Error(
+      result.networkError.name === 'AbortError'
+        ? `AI detection timed out after ${primaryTimeout / 1000}s`
+        : `AI detection failed due to network error: ${result.networkError.message || result.networkError}`
+    );
+  }
+
+  const response = result.response!;
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`AI API returned status ${response.status}: ${errorText || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return normalizeAiResponse(data);
 };
 
 /**

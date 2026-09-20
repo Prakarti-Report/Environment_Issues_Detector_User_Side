@@ -1,32 +1,51 @@
-# React + TypeScript + Vite
+# EarthForward — Citizen Reporting App
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+EarthForward is a citizen reporting web application for detecting and tracking environmental pollution hazards. The application integrates Supabase for live reporting data, user authentication, and storage, alongside an AI detection service to analyze reported incidents.
 
-Currently, two official plugins are available:
+## Run locally vs deployed
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The application automatically detects whether it is running on a local host (`localhost`, `127.0.0.1`, LAN IP) or deployed on the web (e.g., Vercel) and routes AI requests accordingly without requiring manual code edits.
 
-## React Compiler
+| | Local | Online |
+|---|---|---|
+| Frontend | `http://localhost:5173` | Vercel URL |
+| AI API | `http://localhost:8000/detect-pollution` | Render URL |
+| Database/Storage | same Supabase project | same Supabase project |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the Oxlint configuration
+### 1. Environment Setup
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Copy `.env.example` to `.env`:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cp .env.example .env
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Configure your Supabase credentials:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Optional AI API overrides (leave blank for automatic defaults):
+```env
+VITE_AI_API_URL_LOCAL=http://localhost:8000/detect-pollution
+VITE_AI_API_URL_PROD=https://pollution-detection.onrender.com/detect-pollution
+VITE_AI_FALLBACK_TO_PROD=false
+```
+
+### 2. Install & Run
+
+```bash
+npm install
+npm run dev
+```
+
+### 3. Build & Preview
+
+```bash
+npm run build
+npm run preview
+```

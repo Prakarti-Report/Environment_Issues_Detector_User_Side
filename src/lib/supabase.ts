@@ -1,10 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
+const missingVars: string[] = [];
+if (!SUPABASE_URL) missingVars.push('VITE_SUPABASE_URL');
+if (!SUPABASE_ANON_KEY) missingVars.push('VITE_SUPABASE_ANON_KEY');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL or Anon Key is missing. Ensure you have set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+export const isSupabaseConfigured = missingVars.length === 0;
+
+if (!isSupabaseConfigured) {
+  console.error(
+    `[Supabase] Missing required environment variable(s): ${missingVars.join(
+      ', '
+    )}. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel -> Project -> Settings -> Environment Variables, then redeploy.`
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = isSupabaseConfigured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : (null as unknown as ReturnType<typeof createClient>);

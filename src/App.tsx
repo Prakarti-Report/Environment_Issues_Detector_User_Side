@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -7,6 +8,8 @@ import MyReports from './pages/MyReports';
 import Placeholder from './pages/Placeholder';
 import './index.css';
 import L from 'leaflet';
+import { warmUpAi } from './services/ai';
+import { isLocalHost } from './config/env';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -17,6 +20,12 @@ L.Icon.Default.mergeOptions({
 });
 
 function App() {
+  useEffect(() => {
+    if (!isLocalHost) {
+      warmUpAi();
+    }
+  }, []);
+
   return (
     <Router>
       <div className="app-container">
