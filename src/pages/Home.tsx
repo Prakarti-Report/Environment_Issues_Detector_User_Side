@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getReports } from '../services/reports';
 import type { Report } from '../services/reports';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AlertCircle, Camera, CheckCircle, Droplets, Flame, MapPin, TreePine, Trash2, Navigation, Globe, LayoutDashboard } from 'lucide-react';
 import { WORLD_3D_URL, ORG_DASHBOARD_URL } from '../config/links';
 import OrgTaskBoard from '../components/OrgTaskBoard';
@@ -33,11 +33,24 @@ const Home = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [radius, setRadius] = useState<number>(5);
 
+  const location = useLocation();
+
   useEffect(() => {
     getReports().then(data => {
       if (data) setReports(data as unknown as Report[]);
     }).catch(err => console.error(err));
   }, []);
+
+  useEffect(() => {
+    if (location.hash === '#environmental-issues') {
+      const el = document.getElementById('environmental-issues');
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    }
+  }, [location.hash]);
 
   const handleUseMyLocation = () => {
     if (navigator.geolocation) {
@@ -152,7 +165,7 @@ const Home = () => {
       <OrgTaskBoard />
 
       {/* Stats / Environmental Issues Near You */}
-      <section className="container">
+      <section className="container" id="environmental-issues" style={{ scrollMarginTop: '5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '1.75rem', color: 'var(--primary-color)' }}>Environmental Issues Near You</h2>

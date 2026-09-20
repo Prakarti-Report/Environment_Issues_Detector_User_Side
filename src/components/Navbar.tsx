@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { signOut } from '../services/auth';
 import AuthForm from './AuthForm';
+import { WORLD_3D_URL, ORG_REGISTRATION_PATH } from '../config/links';
 
 const Navbar = () => {
   const [session, setSession] = useState<any>(null);
@@ -44,6 +45,15 @@ const Navbar = () => {
     }
   };
 
+  const handleExploreMapClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const el = document.getElementById('environmental-issues');
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth' });
+      window.history.pushState(null, '', '#environmental-issues');
+    }
+  };
+
   return (
     <>
       <nav className="navbar">
@@ -53,10 +63,10 @@ const Navbar = () => {
         </Link>
         <div className="nav-links">
           <Link to="/" className="nav-link active">Home</Link>
-          <Link to="/explore" className="nav-link">Explore Map</Link>
+          <Link to="/#environmental-issues" onClick={handleExploreMapClick} className="nav-link">Explore Map</Link>
           <Link to="/report" className="nav-link">Report Issue</Link>
-          <Link to="/learn" className="nav-link">Learn</Link>
-          <Link to="/action" className="nav-link">Take Action</Link>
+          <a href={WORLD_3D_URL} target="_blank" rel="noopener noreferrer" className="nav-link">Learn</a>
+          <Link to={ORG_REGISTRATION_PATH} className="nav-link">Take Action</Link>
         </div>
         <div className="nav-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           {session ? (

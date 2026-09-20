@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Report from './pages/Report';
 import MyReports from './pages/MyReports';
-import Placeholder from './pages/Placeholder';
 import RegisterOrganization from './pages/RegisterOrganization';
+import { WORLD_3D_URL } from './config/links';
 import './index.css';
 import L from 'leaflet';
 import { warmUpAi } from './services/ai';
@@ -19,6 +19,13 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+function ExternalRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+  return null;
+}
 
 function App() {
   useEffect(() => {
@@ -37,9 +44,9 @@ function App() {
             <Route path="/report" element={<Report />} />
             <Route path="/my-reports" element={<MyReports />} />
             <Route path="/register-organization" element={<RegisterOrganization />} />
-            <Route path="/explore" element={<Placeholder title="Explore Map" />} />
-            <Route path="/learn" element={<Placeholder title="Learn about the Environment" />} />
-            <Route path="/action" element={<Placeholder title="Take Action" />} />
+            <Route path="/explore" element={<Navigate to="/#environmental-issues" replace />} />
+            <Route path="/learn" element={<ExternalRedirect to={WORLD_3D_URL} />} />
+            <Route path="/action" element={<Navigate to="/register-organization" replace />} />
           </Routes>
         </main>
         <Footer />
