@@ -182,3 +182,9 @@
     border-right-color: var(--border);
   }
 }
+
+@media (width<=512px){
+    .container{
+        max-width:100vw;
+    }
+}
