@@ -4,7 +4,7 @@ import { getReports, getImageUrl, updateReport } from '../services/reports';
 import type { Report } from '../services/reports';
 import { detectPollutionFromUrl } from '../services/ai';
 import Auth from '../components/Auth';
-import { MapPin, Calendar, AlertTriangle, Bot, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { MapPin, Calendar, AlertTriangle, Bot, Sparkles, Loader2, RefreshCw, Building2 } from 'lucide-react';
 
 interface ReportWithImages extends Report {
   report_images?: { storage_path: string }[];
@@ -501,6 +501,12 @@ const MyReports = () => {
 
                   {/* Footer row */}
                   <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    {report.organization_name && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Building2 size={13} />
+                        Handled by {report.organization_name}
+                      </span>
+                    )}
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Calendar size={13} />
                       {new Date(report.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

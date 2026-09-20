@@ -4,7 +4,9 @@ import 'leaflet/dist/leaflet.css';
 import { getReports } from '../services/reports';
 import type { Report } from '../services/reports';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Camera, CheckCircle, Droplets, Flame, MapPin, TreePine, Trash2, Navigation } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle, Droplets, Flame, MapPin, TreePine, Trash2, Navigation, Globe, Building2 } from 'lucide-react';
+import { WORLD_3D_URL, ORG_REGISTRATION_PATH } from '../config/links';
+import OrgTaskBoard from '../components/OrgTaskBoard';
 
 // Helper component to change map view dynamically
 function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
@@ -76,13 +78,51 @@ const Home = () => {
             Earth Forward is a citizen-powered environmental reporting platform. 
             We empower communities to document ecological challenges and track action.
           </p>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <Link to="/report" className="btn btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
               Report an Environmental Issue
             </Link>
             <button className="btn btn-outline" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem', border: 'none', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
               ▶ Play Explainer Video
             </button>
+            <a
+              href={WORLD_3D_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline"
+              style={{
+                fontSize: '1rem',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                background: 'white',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              <Globe size={18} /> 3D World Environment
+            </a>
+            <Link
+              to={ORG_REGISTRATION_PATH}
+              className="btn btn-outline"
+              style={{
+                fontSize: '1rem',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                background: 'white',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              <Building2 size={18} /> Organization Registration
+            </Link>
           </div>
         </div>
         <div className="hero-map-wrapper">
@@ -105,6 +145,9 @@ const Home = () => {
           </MapContainer>
         </div>
       </section>
+
+      {/* Organizations & Teams at work */}
+      <OrgTaskBoard />
 
       {/* Stats / Environmental Issues Near You */}
       <section className="container">

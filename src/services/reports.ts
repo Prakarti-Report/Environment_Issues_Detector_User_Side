@@ -24,6 +24,7 @@ export interface Report {
   ai_description: string | null;
   assigned_worker_id?: string | null;
   organization_id?: string | null;
+  organization_name?: string | null;
   created_at: string;
   updated_at: string;
 }

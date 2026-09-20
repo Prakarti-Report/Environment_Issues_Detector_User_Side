@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Report from './pages/Report';
 import MyReports from './pages/MyReports';
 import Placeholder from './pages/Placeholder';
+import RegisterOrganization from './pages/RegisterOrganization';
 import './index.css';
 import L from 'leaflet';
 import { warmUpAi } from './services/ai';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/report" element={<Report />} />
             <Route path="/my-reports" element={<MyReports />} />
+            <Route path="/register-organization" element={<RegisterOrganization />} />
             <Route path="/explore" element={<Placeholder title="Explore Map" />} />
             <Route path="/learn" element={<Placeholder title="Learn about the Environment" />} />
             <Route path="/action" element={<Placeholder title="Take Action" />} />
