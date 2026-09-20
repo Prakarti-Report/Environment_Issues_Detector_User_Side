@@ -4,8 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import { getReports } from '../services/reports';
 import type { Report } from '../services/reports';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Camera, CheckCircle, Droplets, Flame, MapPin, TreePine, Trash2, Navigation, Globe, Building2 } from 'lucide-react';
-import { WORLD_3D_URL, ORG_REGISTRATION_PATH } from '../config/links';
+import { AlertCircle, Camera, CheckCircle, Droplets, Flame, MapPin, TreePine, Trash2, Navigation, Globe, LayoutDashboard } from 'lucide-react';
+import { WORLD_3D_URL, ORG_DASHBOARD_URL } from '../config/links';
 import OrgTaskBoard from '../components/OrgTaskBoard';
 
 // Helper component to change map view dynamically
@@ -73,9 +73,9 @@ const Home = () => {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">See the problem.<br/>Map the impact.<br/>Move Earth Forward.</h1>
+          <h1 className="hero-title">See the problem.<br/>Map the impact.<br/>PRAKARTI REPORT.</h1>
           <p className="hero-subtitle">
-            Earth Forward is a citizen-powered environmental reporting platform. 
+            PRAKARTI REPORT is a citizen-powered environmental reporting platform. 
             We empower communities to document ecological challenges and track action.
           </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -105,8 +105,10 @@ const Home = () => {
             >
               <Globe size={18} /> 3D World Environment
             </a>
-            <Link
-              to={ORG_REGISTRATION_PATH}
+            <a
+              href={ORG_DASHBOARD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn btn-outline"
               style={{
                 fontSize: '1rem',
@@ -121,8 +123,8 @@ const Home = () => {
                 color: 'inherit',
               }}
             >
-              <Building2 size={18} /> Organization Registration
-            </Link>
+              <LayoutDashboard size={18} /> Organization Dashboard
+            </a>
           </div>
         </div>
         <div className="hero-map-wrapper">

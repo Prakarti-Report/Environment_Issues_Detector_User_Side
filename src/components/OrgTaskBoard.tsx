@@ -168,7 +168,7 @@ const OrgTaskBoard: React.FC = () => {
             Who's Working On What
           </h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
-            Organizations and teams on the Earth Forward platform — updated live.
+            Organizations and teams on the PRAKARTI REPORT platform — updated live.
           </p>
         </div>
 

@@ -49,7 +49,7 @@ const Navbar = () => {
       <nav className="navbar">
         <Link to="/" className="nav-brand">
           <Leaf size={24} color="var(--accent-color)" />
-          Earth Forward <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '12px', color: 'var(--accent-color)' }}>EARTH DAY HACKATHON</span>
+          PRAKARTI REPORT <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '12px', color: 'var(--accent-color)' }}>EARTH DAY HACKATHON</span>
         </Link>
         <div className="nav-links">
           <Link to="/" className="nav-link active">Home</Link>

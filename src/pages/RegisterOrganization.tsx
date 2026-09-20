@@ -216,7 +216,7 @@ const RegisterOrganization: React.FC = () => {
             Register your Organization
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-            Join Earth Forward and get assigned real reports from citizens.
+            Join PRAKARTI REPORT and get assigned real reports from citizens.
           </p>
         </div>
 
@@ -255,7 +255,7 @@ const RegisterOrganization: React.FC = () => {
               Registration successful!
             </h2>
             <p style={{ color: 'var(--text-dark)', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '1rem' }}>
-              <strong>{registeredOrgName}</strong> is now on Earth Forward. You can log in with your email and password.
+              <strong>{registeredOrgName}</strong> is now on PRAKARTI REPORT. You can log in with your email and password.
             </p>
 
             {requiresEmailConfirm && (

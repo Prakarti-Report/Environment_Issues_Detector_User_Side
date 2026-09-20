@@ -11,7 +11,7 @@ const Footer = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary-color)', textDecoration: 'none' }}>
               <Leaf size={24} color="var(--accent-color)" />
-              Earth Forward
+              PRAKARTI REPORT
             </Link>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               Our goal is to build environmental consciousness and empower citizens to take meaningful action in their neighborhoods.
@@ -59,7 +59,7 @@ const Footer = () => {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2rem', borderTop: '1px solid var(--border-color)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          <p>© 2026 Earth Forward. All Rights Reserved. Built for the Earth Day Hackathon.</p>
+          <p>© 2026 PRAKARTI REPORT. All Rights Reserved. Built for the Earth Day Hackathon.</p>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <span>Made with 💚</span>
           </div>

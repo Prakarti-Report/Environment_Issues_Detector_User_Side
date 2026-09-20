@@ -8,7 +8,7 @@ export interface OrgName {
 }
 
 export const DEFAULT_REGISTERED_ORGS: OrgName[] = [
-  { id: 'def-1', name: 'Global Earth Forward Initiative', created_at: '2026-01-01T00:00:00Z', isDbRecord: false },
+  { id: 'def-1', name: 'Global PRAKARTI REPORT Initiative', created_at: '2026-01-01T00:00:00Z', isDbRecord: false },
   { id: 'def-2', name: 'Clean Air Action Network', created_at: '2026-01-05T00:00:00Z', isDbRecord: false },
   { id: 'def-3', name: 'Himalayan Forest Guardians', created_at: '2026-01-10T00:00:00Z', isDbRecord: false },
   { id: 'def-4', name: 'Clean River & Water Patrol', created_at: '2026-01-15T00:00:00Z', isDbRecord: false },

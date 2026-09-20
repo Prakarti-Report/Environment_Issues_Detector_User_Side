@@ -1,6 +1,6 @@
-# EarthForward — Citizen Reporting App
+# PRAKARTI REPORT — Citizen Reporting App
 
-EarthForward is a citizen reporting web application for detecting and tracking environmental pollution hazards. The application integrates Supabase for live reporting data, user authentication, and storage, alongside an AI detection service to analyze reported incidents.
+PRAKARTI REPORT is a citizen reporting web application for detecting and tracking environmental pollution hazards. The application integrates Supabase for live reporting data, user authentication, and storage, alongside an AI detection service to analyze reported incidents.
 
 ## Run locally vs deployed
 
@@ -65,7 +65,7 @@ Each report stores the name of the assigned organization in `reports.organizatio
 
 ### 4. Organization Registration (`/register-organization`)
 
-Organizations can register directly on the EarthForward app at `/register-organization`:
+Organizations can register directly on the PRAKARTI REPORT app at `/register-organization`:
 - **Data Flow**: Submitting the registration form invokes `supabase.auth.signUp({ email, password, options: { data: { account_type: 'organization', organization_name, member_count } } })`.
 - **Database Trigger**: An `after insert on auth.users` trigger (`handle_new_organization_user`) automatically inserts the linked row into `public.organizations` with `name`, `email`, `member_count`, `user_id`, and auto-generates `team_code` via sequence.
 - **Active Immediately**: Newly registered organizations are active immediately without an approval step, appearing on the landing page board and in the officer dashboard.
