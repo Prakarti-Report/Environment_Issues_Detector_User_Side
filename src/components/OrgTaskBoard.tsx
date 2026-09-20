@@ -4,23 +4,17 @@ import type { OrgName } from '../services/orgBoard';
 import { useLiveTables } from '../hooks/useLiveTables';
 import { Link } from 'react-router-dom';
 import { ORG_REGISTRATION_PATH } from '../config/links';
-import { Building2, Users, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, Sparkles, PlusCircle, ArrowRight, ShieldCheck, TreePine, Droplets, Globe } from 'lucide-react';
 
-const INITIAL_VISIBLE_COUNT = 12;
+const ICONS = [Building2, ShieldCheck, TreePine, Droplets, Globe];
 
 const OrgTaskBoard: React.FC = () => {
   const [orgs, setOrgs] = useState<OrgName[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [errorDetail, setErrorDetail] = useState<{ code?: string; message: string } | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [highlightedIds, setHighlightedIds] = useState<Record<string, boolean>>({});
 
   const prevOrgIdsRef = useRef<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
-  const hasAutoRetriedRef = useRef(false);
-  const autoRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fetchDataRef = useRef<() => void>(() => {});
 
   const fetchData = useCallback(async () => {
     try {
@@ -43,77 +37,122 @@ const OrgTaskBoard: React.FC = () => {
               Object.keys(newlyAdded).forEach((id) => delete updated[id]);
               return updated;
             });
-          }, 1500);
+          }, 3000);
         }
       }
 
       prevOrgIdsRef.current = new Set(data.map((o) => o.id));
       hasLoadedRef.current = true;
-      hasAutoRetriedRef.current = false;
-
       setOrgs(data);
-      setError(null);
-      setErrorDetail(null);
-    } catch (err: any) {
-      console.error('[OrgNames] Error loading organizations:', {
-        code: err?.code,
-        message: err?.message || String(err),
-        details: err?.details,
-        hint: err?.hint,
-      });
-
-      setError('Couldn’t load live task board.');
-      setErrorDetail({
-        code: err?.code,
-        message: err?.message || String(err),
-      });
-
-      // Auto-retry once after 5s on failure
-      if (!hasAutoRetriedRef.current) {
-        hasAutoRetriedRef.current = true;
-        if (autoRetryTimerRef.current) clearTimeout(autoRetryTimerRef.current);
-        autoRetryTimerRef.current = setTimeout(() => {
-          fetchDataRef.current();
-        }, 5000);
-      }
+    } catch (err) {
+      console.error('[OrgNames] Error loading organizations:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchDataRef.current = fetchData;
-  });
-
-  // Subscribe to table 'organizations' only
+  // Subscribe to table 'organizations' for realtime additions
   const liveStatus = useLiveTables(fetchData, ['organizations']);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    return () => {
-      if (autoRetryTimerRef.current) {
-        clearTimeout(autoRetryTimerRef.current);
-      }
-    };
-  }, []);
+  // Split into two rows for the moving marquee tracks
+  const midpoint = Math.ceil(orgs.length / 2);
+  const row1Orgs = orgs.slice(0, midpoint);
+  const row2Orgs = orgs.slice(midpoint);
 
-  const handleManualRetry = () => {
-    hasAutoRetriedRef.current = false;
-    if (autoRetryTimerRef.current) {
-      clearTimeout(autoRetryTimerRef.current);
-    }
-    setLoading(true);
-    fetchData();
+  // Helper to render an organization pill
+  const renderOrgPill = (org: OrgName, index: number, isDuplicate = false) => {
+    const isHighlighted = Boolean(highlightedIds[org.id]);
+    const IconComponent = ICONS[index % ICONS.length];
+
+    return (
+      <div
+        key={`${org.id}-${isDuplicate ? 'dup' : 'orig'}-${index}`}
+        title={org.name}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          padding: '0.65rem 1.15rem',
+          backgroundColor: isHighlighted ? '#ecfdf5' : '#ffffff',
+          border: `1.5px solid ${isHighlighted ? '#10b981' : '#e2e8f0'}`,
+          borderRadius: '9999px',
+          boxShadow: isHighlighted
+            ? '0 0 12px rgba(16, 185, 129, 0.35)'
+            : '0 2px 8px rgba(0, 0, 0, 0.04)',
+          whiteSpace: 'nowrap',
+          userSelect: 'none',
+          cursor: 'default',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            backgroundColor: isHighlighted ? '#d1fae5' : 'var(--accent-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--primary-color)',
+            flexShrink: 0,
+          }}
+        >
+          <IconComponent size={15} />
+        </div>
+
+        <span
+          style={{
+            fontSize: '0.92rem',
+            fontWeight: 600,
+            color: 'var(--text-dark)',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {org.name}
+        </span>
+
+        {isHighlighted ? (
+          <span
+            style={{
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: '9999px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+            }}
+          >
+            New
+          </span>
+        ) : (
+          <span
+            style={{
+              fontSize: '0.68rem',
+              fontWeight: 600,
+              padding: '2px 7px',
+              borderRadius: '9999px',
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            {org.isDbRecord ? 'Registered' : 'Partner NGO'}
+          </span>
+        )}
+      </div>
+    );
   };
-
-  const visibleOrgs = showAll ? orgs : orgs.slice(0, INITIAL_VISIBLE_COUNT);
 
   return (
     <section className="container" aria-label="Registered Organizations">
-      {/* Header */}
+      {/* Section Header */}
       <div
         style={{
           display: 'flex',
@@ -131,23 +170,10 @@ const OrgTaskBoard: React.FC = () => {
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
             Organizations and teams on the Earth Forward platform — updated live.
           </p>
-          {!loading && !error && orgs.length > 0 && (
-            <span
-              style={{
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: 'var(--accent-color)',
-                marginTop: '0.4rem',
-                display: 'inline-block',
-              }}
-            >
-              {orgs.length} organization{orgs.length !== 1 ? 's' : ''} registered
-            </span>
-          )}
         </div>
 
-        {/* Live Pill with aria-live and data not refreshing hint */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {/* Live Pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div
             aria-live="polite"
             style={{
@@ -162,21 +188,20 @@ const OrgTaskBoard: React.FC = () => {
                 liveStatus === 'live'
                   ? '#dcfce7'
                   : liveStatus === 'polling'
-                  ? '#fef3c7'
-                  : '#f3f4f6',
+                    ? '#fef3c7'
+                    : '#f3f4f6',
               color:
                 liveStatus === 'live'
                   ? '#166534'
                   : liveStatus === 'polling'
-                  ? '#92400e'
-                  : '#4b5563',
-              border: `1px solid ${
-                liveStatus === 'live'
+                    ? '#92400e'
+                    : '#4b5563',
+              border: `1px solid ${liveStatus === 'live'
                   ? '#86efac'
                   : liveStatus === 'polling'
-                  ? '#fde68a'
-                  : '#e5e7eb'
-              }`,
+                    ? '#fde68a'
+                    : '#e5e7eb'
+                }`,
             }}
           >
             <span
@@ -189,214 +214,164 @@ const OrgTaskBoard: React.FC = () => {
                   liveStatus === 'live'
                     ? '#16a34a'
                     : liveStatus === 'polling'
-                    ? '#d97706'
-                    : '#9ca3af',
+                      ? '#d97706'
+                      : '#9ca3af',
                 boxShadow: liveStatus === 'live' ? '0 0 6px #16a34a' : 'none',
               }}
             />
-            {liveStatus === 'live'
-              ? '● Live'
-              : liveStatus === 'polling'
-              ? '● Live (30 s)'
-              : 'Connecting…'}
+            {liveStatus === 'live' ? '● Live' : 'Connecting…'}
           </div>
-
-          {error && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                color: '#b45309',
-                backgroundColor: '#fef3c7',
-                padding: '2px 8px',
-                borderRadius: '8px',
-                border: '1px solid #fde68a',
-                fontStyle: 'italic',
-              }}
-            >
-              data not refreshing
-            </span>
-          )}
         </div>
       </div>
 
-      {/* States: Loading, Error, Empty, or Compact Cards Grid */}
-      {loading ? (
+      {/* Moving Organizations Showcase Box */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '1.25rem',
+          border: '1px solid var(--border-color)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+          overflow: 'hidden',
+          padding: '1.5rem 1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        }}
+      >
+        {/* Box Top Bar */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '1rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 0.75rem',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
           }}
         >
-          {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span
               style={{
-                backgroundColor: 'white',
-                borderRadius: '0.75rem',
-                border: '1px solid var(--border-color)',
-                padding: '0.75rem 1rem',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.6rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                opacity: 0.6,
+                gap: '0.4rem',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                color: 'var(--primary-color)',
+                backgroundColor: 'var(--accent-light)',
+                padding: '4px 10px',
+                borderRadius: '9999px',
               }}
             >
-              <div style={{ width: '16px', height: '16px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
-              <div style={{ height: '14px', backgroundColor: '#e2e8f0', borderRadius: '4px', flex: 1 }} />
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <div
-          style={{
-            backgroundColor: '#fff',
-            borderRadius: '1rem',
-            border: '1px solid #fecaca',
-            padding: '2.5rem',
-            textAlign: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          }}
-        >
-          <AlertCircle size={36} color="#dc2626" style={{ marginBottom: '0.75rem' }} />
-          <p style={{ color: '#991b1b', fontWeight: 600, margin: '0 0 0.5rem 0' }}>{error}</p>
+              <Building2 size={14} /> Registered Action Teams & NGOs
+            </span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              ({orgs.length} active organizations)
+            </span>
+          </div>
 
-          {import.meta.env.DEV && errorDetail && (
-            <p
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '0.8rem',
-                color: '#7f1d1d',
-                backgroundColor: '#fef2f2',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.4rem',
-                display: 'inline-block',
-                maxWidth: '100%',
-                overflowX: 'auto',
-                margin: '0.5rem auto 1.25rem auto',
-                border: '1px solid #fee2e2',
-              }}
-            >
-              {errorDetail.code ? `${errorDetail.code} · ` : ''}
-              {errorDetail.message}
-            </p>
-          )}
-
-          <div style={{ marginTop: import.meta.env.DEV && errorDetail ? '0' : '1rem' }}>
-            <button
-              onClick={handleManualRetry}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Hover over cards to pause
+            </span>
+            <Link
+              to={ORG_REGISTRATION_PATH}
               className="btn btn-outline"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{
+                fontSize: '0.8rem',
+                padding: '0.35rem 0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid var(--border-color)',
+                color: 'var(--primary-color)',
+                fontWeight: 600,
+              }}
             >
-              <RefreshCw size={14} /> Retry
-            </button>
+              <PlusCircle size={14} /> Register Organization
+            </Link>
           </div>
         </div>
-      ) : orgs.length === 0 ? (
+
+        {/* Continuous Moving Track Container with gradient fade overlay */}
+        <div className="ef-marquee-container" style={{ padding: '0.5rem 0' }}>
+          <div className="ef-marquee-fade-overlay" />
+
+          {loading ? (
+            /* Loading skeletons */
+            <div style={{ display: 'flex', gap: '1rem', padding: '0.5rem 0' }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div
+                  key={n}
+                  style={{
+                    height: '42px',
+                    width: '220px',
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '9999px',
+                    flexShrink: 0,
+                    opacity: 0.6,
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Row 1: Scrolling Left */}
+              <div className="ef-marquee-track-left">
+                {row1Orgs.map((org, idx) => renderOrgPill(org, idx, false))}
+                {/* Duplicate set for seamless continuous loop */}
+                {row1Orgs.map((org, idx) => renderOrgPill(org, idx, true))}
+              </div>
+
+              {/* Row 2: Scrolling Right */}
+              {row2Orgs.length > 0 && (
+                <div className="ef-marquee-track-right" style={{ marginTop: '0.5rem' }}>
+                  {row2Orgs.map((org, idx) => renderOrgPill(org, idx, false))}
+                  {/* Duplicate set for seamless continuous loop */}
+                  {row2Orgs.map((org, idx) => renderOrgPill(org, idx, true))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Box Bottom Bar */}
         <div
           style={{
-            backgroundColor: 'white',
-            borderRadius: '1rem',
-            border: '1px solid var(--border-color)',
-            padding: '3rem 2rem',
-            textAlign: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderTop: '1px solid #f1f5f9',
+            paddingTop: '0.75rem',
+            paddingLeft: '0.75rem',
+            paddingRight: '0.75rem',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
           }}
         >
-          <Users size={40} style={{ opacity: 0.4, marginBottom: '0.75rem' }} />
-          <h3 style={{ fontSize: '1.15rem', color: 'var(--primary-color)', marginBottom: '0.5rem' }}>
-            No organizations have registered yet.
-          </h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
-            Get your environmental action team or NGO on the board.
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Sparkles size={13} color="var(--accent-color)" />
+            <span>All registered organizations continuously rotate in view</span>
+          </div>
+
           <Link
             to={ORG_REGISTRATION_PATH}
-            className="btn btn-primary"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            Register Organization
-          </Link>
-        </div>
-      ) : (
-        <>
-          <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: '1rem',
+              color: 'var(--primary-color)',
+              fontWeight: 600,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
             }}
           >
-            {visibleOrgs.map((org) => {
-              const isHighlighted = Boolean(highlightedIds[org.id]);
-
-              return (
-                <div
-                  key={org.id}
-                  title={org.name}
-                  style={{
-                    backgroundColor: isHighlighted ? '#ecfdf5' : 'white',
-                    border: `1px solid ${isHighlighted ? '#86efac' : 'var(--border-color)'}`,
-                    borderRadius: '0.75rem',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    padding: '0.75rem 1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    transition: 'background-color 1.5s ease, border-color 1.5s ease',
-                    minWidth: 0,
-                  }}
-                >
-                  <Building2
-                    size={16}
-                    color="var(--accent-color)"
-                    style={{ flexShrink: 0 }}
-                  />
-                  <span
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      color: 'var(--text-dark)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {org.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {orgs.length > INITIAL_VISIBLE_COUNT && (
-            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
-              <button
-                onClick={() => setShowAll(!showAll)}
-                className="btn btn-outline"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.85rem',
-                  padding: '0.45rem 1rem',
-                }}
-              >
-                {showAll ? (
-                  <>
-                    <ChevronUp size={14} /> Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown size={14} /> Show all ({orgs.length})
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </>
-      )}
+            Want your environmental team listed here? Register now <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
     </section>
   );
 };

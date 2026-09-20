@@ -235,3 +235,61 @@ body {
     padding: 2rem 1rem;
   }
 }
+
+/* Continuous Moving Organizations Box (Marquee) */
+@keyframes ef-marquee-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes ef-marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.ef-marquee-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.ef-marquee-fade-overlay {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, transparent 6%, transparent 94%, rgba(255,255,255,0.95) 100%);
+}
+
+.ef-marquee-track-left {
+  display: flex;
+  width: max-content;
+  gap: 1.25rem;
+  animation: ef-marquee-left 32s linear infinite;
+  padding: 0.5rem 0;
+}
+
+.ef-marquee-track-right {
+  display: flex;
+  width: max-content;
+  gap: 1.25rem;
+  animation: ef-marquee-right 36s linear infinite;
+  padding: 0.5rem 0;
+}
+
+.ef-marquee-container:hover .ef-marquee-track-left,
+.ef-marquee-container:hover .ef-marquee-track-right {
+  animation-play-state: paused;
+}
+
