@@ -32,6 +32,8 @@ const Home = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [radius, setRadius] = useState<number>(5);
+  const [selectedFilter, setSelectedFilter] = useState('All Issues');
+  const [showVideo, setShowVideo] = useState(false);
 
   const location = useLocation();
 
@@ -73,9 +75,60 @@ const Home = () => {
   };
 
   // Filter reports based on distance if userLocation is set
-  const filteredReports = userLocation 
-    ? reports.filter(r => getDistance(userLocation[0], userLocation[1], r.latitude, r.longitude) <= radius)
-    : reports;
+  const filteredReports = reports.filter(report => {
+  // Location filter
+  const withinRadius = userLocation
+    ? getDistance(
+        userLocation[0],
+        userLocation[1],
+        report.latitude,
+        report.longitude
+      ) <= radius
+    : true;
+
+  // Category filter
+  if (selectedFilter === 'All Issues') return withinRadius;
+
+  const categoryStr = `${report.category || ''} ${report.ai_category || ''}`.toLowerCase();
+
+  let matchesCategory = false;
+
+  if (selectedFilter === 'Waste Issues') {
+    matchesCategory =
+      categoryStr.includes('waste') ||
+      categoryStr.includes('garbage') ||
+      categoryStr.includes('dumping') ||
+      categoryStr.includes('trash') ||
+      categoryStr.includes('litter') ||
+      categoryStr.includes('plastic');
+  } else if (selectedFilter === 'Garbage Dumping') {
+    matchesCategory =
+      categoryStr.includes('garbage') ||
+      categoryStr.includes('dumping') ||
+      categoryStr.includes('trash') ||
+      categoryStr.includes('litter');
+  } else if (selectedFilter === 'Air Quality') {
+    matchesCategory =
+      categoryStr.includes('air') ||
+      categoryStr.includes('smoke') ||
+      categoryStr.includes('burning') ||
+      categoryStr.includes('smog') ||
+      categoryStr.includes('dust') ||
+      categoryStr.includes('emission');
+  } else if (selectedFilter === 'Water Issues') {
+    matchesCategory =
+      categoryStr.includes('water') ||
+      categoryStr.includes('sewage') ||
+      categoryStr.includes('drain') ||
+      categoryStr.includes('river') ||
+      categoryStr.includes('lake') ||
+      categoryStr.includes('ocean') ||
+      categoryStr.includes('spill') ||
+      categoryStr.includes('water pollution');
+  }
+
+  return withinRadius && matchesCategory;
+});
 
   const mapCenter: [number, number] = userLocation || [28.6139, 77.2090];
   const mapZoom = userLocation ? 12 : 11;
@@ -95,7 +148,11 @@ const Home = () => {
             <Link to="/report" className="btn btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
               Report an Environmental Issue
             </Link>
-            <button className="btn btn-outline" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem', border: 'none', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <button 
+              onClick={() => setShowVideo(true)}
+              className="btn btn-outline" 
+              style={{ fontSize: '1rem', padding: '0.75rem 1.5rem', border: 'none', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+            >
               ▶ Play Explainer Video
             </button>
             <a
@@ -191,16 +248,35 @@ const Home = () => {
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {['All Issues', 'Waste Issues', 'Garbage Dumping', 'Air Quality', 'Water Issues'].map((filter, i) => (
-            <button key={filter} className={i === 0 ? "btn btn-primary" : "btn btn-outline"} style={i !== 0 ? { color: 'var(--text-dark)', borderColor: 'var(--border-color)', backgroundColor: 'white' } : {}}>
-              {filter}
-            </button>
-          ))}
-        </div>
+                    <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              marginBottom: '1.5rem',
+              overflowX: 'auto',
+              paddingBottom: '0.5rem'
+            }}>
+              {['All Issues', 'Waste Issues', 'Garbage Dumping', 'Air Quality', 'Water Issues'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setSelectedFilter(filter)}
+                  className={selectedFilter === filter ? "btn btn-primary" : "btn btn-outline"}
+                  style={
+                    selectedFilter !== filter
+                      ? {
+                          color: 'var(--text-dark)',
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'white'
+                        }
+                      : {}
+                  }
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
 
         <div className="grid-map-list">
-           <div style={{ flex: '1 1 600px', height: '500px', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+           <div style={{ minWidth: 0, width: '100%', height: '500px', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
              <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
                 <ChangeView center={mapCenter} zoom={mapZoom} />
                 <TileLayer
@@ -221,7 +297,7 @@ const Home = () => {
            </div>
            
            {/* Dynamic Live Incidents List */}
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+           <div style={{ minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
               <h3 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 Live Incidents <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Found {filteredReports.length}</span>
               </h3>
@@ -234,9 +310,9 @@ const Home = () => {
 
               {filteredReports.map(report => (
                 <div key={report.id} style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <strong style={{ display: 'block' }}>{report.category === 'pending_ai' ? (report.ai_category || 'Environmental Incident') : report.category}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <strong style={{ display: 'block', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{report.category === 'pending_ai' ? (report.ai_category || 'Environmental Incident') : report.category}</strong>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>Status: {report.status.replace(/_/g, ' ')}</span>
                     </div>
                     {report.severity === 'high' && (
@@ -304,6 +380,15 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      {showVideo && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowVideo(false)}>
+          <div style={{ position: 'relative', width: '90%', maxWidth: '800px', aspectRatio: '16/9' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowVideo(false)} style={{ position: 'absolute', top: '-40px', right: '0', background: 'transparent', border: 'none', color: 'white', fontSize: '2.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
+            <iframe width="100%" height="100%" src="https://www.youtube.com/embed/pvXSzEEPoh8?autoplay=1" title="Explainer Video" style={{ border: 'none', borderRadius: '0.5rem', backgroundColor: '#000' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+          </div>
+        </div>
+      )}
       
     </div>
   );
